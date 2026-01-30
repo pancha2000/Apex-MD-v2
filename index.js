@@ -5,15 +5,18 @@
  * ╚═══════════════════════════════════════════╝
  */
 
+const Baileys = require('@whiskeysockets/baileys');
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     DisconnectReason,
     fetchLatestBaileysVersion,
-    makeInMemoryStore,
     Browsers,
     delay
-} = require('@whiskeysockets/baileys');
+} = Baileys;
+
+// makeInMemoryStore may not exist in all versions
+const makeInMemoryStore = Baileys.makeInMemoryStore || null;
 
 const pino = require('pino');
 const fs = require('fs');
@@ -31,8 +34,20 @@ const { serialize } = require('./lib/functions');
 const app = express();
 const PORT = config.PORT || 8000;
 
-// Store
-const store = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) });
+// Store (optional - may not be available in all Baileys versions)
+let store = null;
+if (makeInMemoryStore && typeof makeInMemoryStore === 'function') {
+    try {
+        store = makeInMemoryStore({ 
+            logger: pino().child({ level: 'silent', stream: 'store' }) 
+        });
+        console.log('✅ Message store enabled');
+    } catch (e) {
+        console.log('⚠️  Store initialization failed:', e.message);
+    }
+} else {
+    console.log('⚠️  makeInMemoryStore not available in this Baileys version');
+}
 
 // Auth folder
 const authFolder = path.join(__dirname, 'auth_info');
