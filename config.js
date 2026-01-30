@@ -30,7 +30,7 @@ const config = {
     // ==================== OWNER INFO ====================
     OWNER_NAME: process.env.OWNER_NAME || "Shehan Vimukthi",
     OWNER_NUMBER: process.env.OWNER_NUMBER || "94701391585",
-    SUDO: process.env.SUDO || "94701391585", // Multiple: "9471xxx,9472xxx"
+    SUDO: process.env.SUDO || "94771189323", // Multiple: "9471xxx,9472xxx"
     
     // ==================== ALIVE & MENU ====================
     ALIVE_IMG: process.env.ALIVE_IMG || "https://i.imgur.com/VlZ2Y0l.jpeg",
