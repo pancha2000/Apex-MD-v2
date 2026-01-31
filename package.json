@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "node test.js"
+    "dev": "nodemon index.js"
   },
   "keywords": ["whatsapp", "bot", "baileys", "apex", "enhanced"],
   "author": "Shehan Vimukthi - Enhanced by AI",
@@ -41,7 +40,6 @@
     "cheerio": "^1.0.0-rc.12",
     "node-cron": "^3.0.3",
     "qrcode": "^1.5.3",
-    "canvas": "^2.11.2",
     "mathjs": "^13.0.0",
     "performance-now": "^2.1.0",
     "express-rate-limit": "^7.3.0",
