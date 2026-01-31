@@ -1,7 +1,8 @@
 /**
  * ╔═══════════════════════════════════════════╗
- * ║        APEX-MD V2 - WhatsApp Bot          ║
+ * ║   APEX-MD V2 ENHANCED - WhatsApp Bot      ║
  * ║     Created by: Shehan Vimukthi           ║
+ * ║     Enhanced with AI Features             ║
  * ╚═══════════════════════════════════════════╝
  */
 
@@ -26,7 +27,7 @@ const qrcode = require('qrcode-terminal');
 const { File } = require('megajs');
 
 const config = require('./config');
-const { connectDB } = require('./lib/database');
+const { connectDB, getGroup, updateGroup, getUser, addWarning, getWarnings, clearWarnings } = require('./lib/database');
 const { handler } = require('./lib/commands');
 const { serialize } = require('./lib/functions');
 
@@ -55,6 +56,12 @@ if (!fs.existsSync(authFolder)) {
     fs.mkdirSync(authFolder, { recursive: true });
 }
 
+// Temp folder for downloads
+const tempFolder = path.join(__dirname, 'temp');
+if (!fs.existsSync(tempFolder)) {
+    fs.mkdirSync(tempFolder, { recursive: true });
+}
+
 /**
  * Load all plugins
  */
@@ -66,10 +73,31 @@ function loadPlugins() {
         return;
     }
 
-    const files = fs.readdirSync(pluginFolder);
     let loaded = 0;
 
-    files.forEach(file => {
+    // Load plugins from subdirectories
+    const categories = ['downloads', 'ai', 'group', 'owner', 'utils', 'fun', 'media'];
+    
+    categories.forEach(category => {
+        const categoryPath = path.join(pluginFolder, category);
+        if (fs.existsSync(categoryPath)) {
+            const files = fs.readdirSync(categoryPath);
+            files.forEach(file => {
+                if (file.endsWith('.js')) {
+                    try {
+                        require(path.join(categoryPath, file));
+                        loaded++;
+                    } catch (e) {
+                        console.log(`❌ Plugin Load Error [${category}/${file}]:`, e.message);
+                    }
+                }
+            });
+        }
+    });
+
+    // Load root level plugins
+    const rootFiles = fs.readdirSync(pluginFolder);
+    rootFiles.forEach(file => {
         if (file.endsWith('.js')) {
             try {
                 require(path.join(pluginFolder, file));
@@ -148,7 +176,7 @@ async function downloadSession() {
 async function startBot() {
     console.log('');
     console.log('╔═══════════════════════════════════════════╗');
-    console.log('║        🚀 APEX-MD V2 Starting...         ║');
+    console.log('║    🚀 APEX-MD V2 ENHANCED Starting...   ║');
     console.log('╚═══════════════════════════════════════════╝');
     console.log('');
 
@@ -251,14 +279,58 @@ async function startBot() {
         else if (connection === 'open') {
             console.log('');
             console.log('╔═══════════════════════════════════════════╗');
-            console.log('║    ✅ APEX-MD V2 Connected Successfully   ║');
+            console.log('║  ✅ APEX-MD V2 ENHANCED Connected!       ║');
             console.log('╚═══════════════════════════════════════════╝');
             console.log('');
             console.log(`📱 Bot Number: ${conn.user.id.split(':')[0]}`);
             console.log(`📦 Total Commands: ${handler.getCommands().length}`);
             console.log(`🔧 Prefix: ${config.PREFIX}`);
             console.log(`⚙️  Mode: ${config.MODE}`);
+            console.log(`🤖 Version: 2.0.0 Enhanced`);
             console.log('');
+        }
+    });
+
+    // Group participants update (Welcome/Goodbye)
+    conn.ev.on('group-participants.update', async (update) => {
+        try {
+            const { id, participants, action } = update;
+            
+            // Get group settings from database
+            const group = await getGroup(id);
+            if (!group) return;
+
+            const groupMetadata = await conn.groupMetadata(id);
+            
+            for (let participant of participants) {
+                // Welcome message
+                if (action === 'add' && group.welcome) {
+                    let message = group.welcomeMessage || '👋 Welcome @user to @group!';
+                    message = message
+                        .replace('@user', `@${participant.split('@')[0]}`)
+                        .replace('@group', groupMetadata.subject)
+                        .replace('@desc', groupMetadata.desc || '');
+
+                    await conn.sendMessage(id, {
+                        text: message,
+                        mentions: [participant]
+                    });
+                } 
+                // Goodbye message
+                else if (action === 'remove' && group.goodbye) {
+                    let message = group.goodbyeMessage || '👋 Goodbye @user!';
+                    message = message
+                        .replace('@user', `@${participant.split('@')[0]}`)
+                        .replace('@group', groupMetadata.subject);
+
+                    await conn.sendMessage(id, {
+                        text: message,
+                        mentions: [participant]
+                    });
+                }
+            }
+        } catch (e) {
+            console.log('Group participants update error:', e);
         }
     });
 
@@ -277,8 +349,70 @@ async function startBot() {
                 await conn.readMessages([mek.key]);
             }
 
-            // Check if it's a command
+            // Get message body
             const body = m.body || '';
+
+            // ============================================
+            // ANTILINK PROTECTION
+            // ============================================
+            if (m.isGroup) {
+                const group = await getGroup(m.from);
+                if (group?.antilink) {
+                    const linkPattern = /(https?:\/\/|www\.)[^\s]+/gi;
+                    const hasLink = linkPattern.test(body);
+                    
+                    if (hasLink) {
+                        const groupMetadata = await conn.groupMetadata(m.from);
+                        const participants = groupMetadata.participants;
+                        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+                        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+                        
+                        // Ignore if user is admin or owner
+                        if (!userAdmin && !config.isOwner(m.sender) && botAdmin) {
+                            // Delete message
+                            await conn.sendMessage(m.from, { delete: mek.key });
+                            
+                            // Take action based on settings
+                            if (group.antilinkAction === 'kick') {
+                                await conn.groupParticipantsUpdate(m.from, [m.sender], 'remove');
+                                await conn.sendMessage(m.from, {
+                                    text: `🚫 @${m.sender.split('@')[0]} link එකක් යැව්වා හින්දා kick කරන ලදී!`,
+                                    mentions: [m.sender]
+                                });
+                            } else if (group.antilinkAction === 'warn') {
+                                await addWarning(m.sender, m.from, 'Sent a link', conn.user.id);
+                                const warnings = await getWarnings(m.sender, m.from);
+                                
+                                if (warnings.length >= 3) {
+                                    await conn.groupParticipantsUpdate(m.from, [m.sender], 'remove');
+                                    await clearWarnings(m.sender, m.from);
+                                    await conn.sendMessage(m.from, {
+                                        text: `🚫 @${m.sender.split('@')[0]} warnings 3ක් හින්දා kick කරන ලදී!`,
+                                        mentions: [m.sender]
+                                    });
+                                } else {
+                                    await conn.sendMessage(m.from, {
+                                        text: `⚠️ @${m.sender.split('@')[0]} warned! Links යවන්න එපා!\nWarnings: ${warnings.length}/3`,
+                                        mentions: [m.sender]
+                                    });
+                                }
+                            } else {
+                                // Just delete
+                                await conn.sendMessage(m.from, {
+                                    text: `❌ @${m.sender.split('@')[0]} links යවන්න බැහැ!`,
+                                    mentions: [m.sender]
+                                });
+                            }
+                            
+                            return; // Stop processing
+                        }
+                    }
+                }
+            }
+
+            // ============================================
+            // COMMAND PROCESSING
+            // ============================================
             const prefix = config.PREFIX;
             
             if (!body.startsWith(prefix)) return;
@@ -292,8 +426,21 @@ async function startBot() {
             const cmd = handler.findCommand(cmdName);
             if (!cmd) return;
 
+            // Check if user is banned
+            const user = await getUser(m.sender);
+            if (user?.banned) {
+                if (user.banExpiry && user.banExpiry < new Date()) {
+                    // Ban expired, unban
+                    await updateUser(m.sender, { banned: false, banExpiry: null });
+                } else {
+                    return await conn.sendMessage(m.from, {
+                        text: '❌ ඔබ bot එක use කරන්න ban කරලා තියෙනවා!'
+                    }, { quoted: mek });
+                }
+            }
+
             // Check permissions
-            const isOwner = config.SUDO.split(',').includes(m.sender.split('@')[0]);
+            const isOwner = config.isOwner(m.sender);
             
             // Owner only commands
             if (cmd.isOwner && !isOwner) {
@@ -347,6 +494,12 @@ async function startBot() {
 
             await cmd.function(conn, mek, m, extra);
 
+            // Log command usage to database
+            if (config.MONGODB) {
+                const { logCommand } = require('./lib/database');
+                await logCommand(cmd.pattern, m.sender, m.isGroup ? m.from : null);
+            }
+
         } catch (e) {
             console.log('❌ Message Handler Error:', e.message);
             if (config.DEBUG === 'true') {
@@ -362,14 +515,67 @@ async function startBot() {
 app.get('/', (req, res) => {
     res.send(`
         <html>
-            <head><title>APEX-MD V2</title></head>
-            <body style="font-family: Arial; text-align: center; padding: 50px;">
-                <h1>✅ APEX-MD V2 is Running</h1>
-                <p>Bot Status: <strong style="color: green;">Active</strong></p>
-                <p>Version: 2.0.0</p>
+            <head>
+                <title>APEX-MD V2 ENHANCED</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                        padding: 50px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                    }
+                    .container {
+                        background: rgba(255,255,255,0.1);
+                        padding: 40px;
+                        border-radius: 20px;
+                        backdrop-filter: blur(10px);
+                    }
+                    h1 { font-size: 3em; margin-bottom: 20px; }
+                    .status { color: #4ade80; font-weight: bold; font-size: 1.5em; }
+                    .version { margin-top: 20px; opacity: 0.8; }
+                    .features { margin-top: 30px; text-align: left; }
+                    .features li { margin: 10px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>✅ APEX-MD V2 ENHANCED</h1>
+                    <p class="status">Status: Active & Running</p>
+                    <p class="version">Version: 2.0.0 Enhanced Edition</p>
+                    
+                    <div class="features">
+                        <h2>🚀 Features:</h2>
+                        <ul>
+                            <li>📥 Download System (YouTube, TikTok)</li>
+                            <li>🤖 AI Integration (Gemini, ChatGPT)</li>
+                            <li>👥 Complete Group Management</li>
+                            <li>🛡️ Antilink Protection</li>
+                            <li>👋 Welcome/Goodbye Messages</li>
+                            <li>👑 Owner Control Panel</li>
+                            <li>🛠️ Utility Commands</li>
+                            <li>💾 Database Integration</li>
+                            <li>📊 44+ Commands Total</li>
+                        </ul>
+                    </div>
+                    
+                    <p style="margin-top: 30px;">
+                        Created with ❤️ by Shehan Vimukthi<br>
+                        Enhanced with AI
+                    </p>
+                </div>
             </body>
         </html>
     `);
+});
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: process.uptime(),
+        version: '2.0.0',
+        enhanced: true
+    });
 });
 
 // Start server
@@ -381,8 +587,27 @@ app.listen(PORT, () => {
 // Error handlers
 process.on('uncaughtException', (err) => {
     console.log('❌ Uncaught Exception:', err.message);
+    if (config.DEBUG === 'true') {
+        console.log(err);
+    }
 });
 
 process.on('unhandledRejection', (err) => {
     console.log('❌ Unhandled Rejection:', err.message);
+    if (config.DEBUG === 'true') {
+        console.log(err);
+    }
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('');
+    console.log('👋 Bot shutting down gracefully...');
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('');
+    console.log('👋 Bot shutting down gracefully...');
+    process.exit(0);
 });

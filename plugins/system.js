@@ -4,21 +4,21 @@ const config = require('../config');
 const os = require('os');
 
 cmd({
-    pattern: "system",
-    alias: ["status", "info", "botinfo"],
-    desc: "Show system information",
-    category: "main",
-    react: "💻",
-    filename: __filename
-},
-async (conn, mek, m, { reply }) => {
-    try {
-        const uptime = runtime(process.uptime());
-        const totalMem = formatNumber(os.totalmem() / 1024 / 1024);
-        const freeMem = formatNumber(os.freemem() / 1024 / 1024);
-        const usedMem = formatNumber((os.totalmem() - os.freemem()) / 1024 / 1024);
-        
-        const systemInfo = `
+        pattern: "system",
+        alias: ["status", "info", "botinfo"],
+        desc: "Show system information",
+        category: "main",
+        react: "💻",
+        filename: __filename
+    },
+    async (conn, mek, m, { reply }) => {
+        try {
+            const uptime = runtime(process.uptime());
+            const totalMem = formatNumber(os.totalmem() / 1024 / 1024);
+            const freeMem = formatNumber(os.freemem() / 1024 / 1024);
+            const usedMem = formatNumber((os.totalmem() - os.freemem()) / 1024 / 1024);
+            
+            const systemInfo = `
 ╔════════════════════════════╗
 ║     SYSTEM INFORMATION     ║
 ╚════════════════════════════╝
@@ -40,9 +40,9 @@ async (conn, mek, m, { reply }) => {
 
 > *APEX-MD V2* 🚀
 `;
-        
-        await reply(systemInfo);
-    } catch (e) {
-        await reply('❌ Error: ' + e.message);
-    }
-});
+            
+            await reply(systemInfo);
+        } catch (e) {
+            await reply('❌ Error: ' + e.message);
+        }
+    });
