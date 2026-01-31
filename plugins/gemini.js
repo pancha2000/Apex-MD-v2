@@ -1,5 +1,5 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Initialize Gemini

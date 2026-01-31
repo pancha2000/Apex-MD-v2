@@ -1,7 +1,7 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
-const { banUser, unbanUser, getUser } = require('../../lib/database');
-const { getCommandStats } = require('../../lib/database');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
+const { banUser, unbanUser, getUser } = require('../lib/database');
+const { getCommandStats } = require('../lib/database');
 
 // Block user
 cmd({

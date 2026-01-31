@@ -1,5 +1,5 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
 const translate = require('translate-google');
 const axios = require('axios');
 const math = require('mathjs');

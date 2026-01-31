@@ -1,9 +1,9 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
 const yts = require('yt-search');
 const ytdl = require('@distube/ytdl-core');
 const fs = require('fs');
-const { getRandom } = require('../../lib/functions');
+const { getRandom } = require('../lib/functions');
 
 cmd({
     pattern: "video",

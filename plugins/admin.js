@@ -1,6 +1,6 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
-const { updateGroup, addWarning, getWarnings, clearWarnings } = require('../../lib/database');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
+const { updateGroup, addWarning, getWarnings, clearWarnings } = require('../lib/database');
 
 // Add member
 cmd({

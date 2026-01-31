@@ -1,7 +1,7 @@
-const { cmd } = require('../../lib/commands');
+const { cmd } = require('../lib/commands');
 const axios = require('axios');
 const fs = require('fs');
-const { getRandom } = require('../../lib/functions');
+const { getRandom } = require('../lib/functions');
 
 cmd({
     pattern: "tiktok",

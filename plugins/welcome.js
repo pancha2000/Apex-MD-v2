@@ -1,6 +1,6 @@
-const { cmd } = require('../../lib/commands');
-const config = require('../../config');
-const { getGroup, updateGroup } = require('../../lib/database');
+const { cmd } = require('../lib/commands');
+const config = require('../config');
+const { getGroup, updateGroup } = require('../lib/database');
 
 // Welcome toggle
 cmd({
