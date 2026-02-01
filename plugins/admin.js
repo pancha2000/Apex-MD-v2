@@ -2,6 +2,30 @@ const { cmd } = require('../lib/commands');
 const config = require('../config');
 const { updateGroup, addWarning, getWarnings, clearWarnings } = require('../lib/database');
 
+// Helper function to get bot number correctly
+function getBotNumber(conn) {
+    try {
+        // Try multiple methods to get bot number
+        if (conn.user?.id) {
+            // Method 1: Standard format
+            const botNum = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+            return botNum;
+        } else if (conn.user?.jid) {
+            // Method 2: JID format
+            return conn.user.jid;
+        } else if (conn.authState?.creds?.me?.id) {
+            // Method 3: Auth state
+            const botNum = conn.authState.creds.me.id.split(":")[0] + "@s.whatsapp.net";
+            return botNum;
+        }
+        // Fallback
+        return conn.decodeJid(conn.user.id);
+    } catch (e) {
+        console.error("Error getting bot number:", e);
+        return null;
+    }
+}
+
 // Add member
 cmd({
     pattern: "add",
@@ -16,12 +40,28 @@ async (conn, mek, m, { reply, text }) => {
         // Check if user is admin
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        
+        // Get bot number using helper function
+        const botNumber = getBotNumber(conn);
+        
+        if (!botNumber) {
+            console.log("Bot user info:", conn.user);
+            return await reply('❌ Bot number එක හොයාගන්න බැරි වුනා. Developer කෙනෙක්ට කියන්න.');
+        }
+        
+        // Find bot and user admin status
+        const botParticipant = participants.find(p => p.id === botNumber);
+        const userParticipant = participants.find(p => p.id === m.sender);
+        
+        const botAdmin = botParticipant?.admin;
+        const userAdmin = userParticipant?.admin;
+        
+        console.log("Bot number:", botNumber);
+        console.log("Bot admin status:", botAdmin);
+        console.log("User admin status:", userAdmin);
 
         if (!botAdmin) {
-            return await reply('❌ Bot admin නෙවෙයි!');
+            return await reply('❌ Bot admin නෙවෙයි! කරුණාකර bot එක group එකේ admin කරන්න.');
         }
 
         if (!userAdmin && !config.isOwner(m.sender)) {
@@ -47,6 +87,7 @@ async (conn, mek, m, { reply, text }) => {
         await m.react('✅');
 
     } catch (e) {
+        console.error("Add command error:", e);
         await m.react('❌');
         await reply('❌ Error: ' + e.message);
     }
@@ -66,7 +107,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
@@ -116,7 +157,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
@@ -160,7 +201,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
@@ -283,7 +324,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
@@ -320,7 +361,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
@@ -357,7 +398,7 @@ async (conn, mek, m, { reply, text }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botNumber = getBotNumber(conn);
         const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
