@@ -16,7 +16,8 @@ async (conn, mek, m, { reply, text }) => {
         // Check if user is admin
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -65,7 +66,8 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -114,7 +116,8 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -157,7 +160,8 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -279,7 +283,8 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -315,7 +320,8 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
@@ -351,7 +357,8 @@ async (conn, mek, m, { reply, text }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+        const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
         const userAdmin = participants.find(p => p.id === m.sender)?.admin;
 
         if (!botAdmin) {
