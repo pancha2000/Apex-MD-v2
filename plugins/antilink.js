@@ -4,43 +4,44 @@ const { getGroup, updateGroup } = require('../lib/database');
 
 // Antilink toggle
 cmd({
-    pattern: "antilink",
-    desc: "Enable/Disable antilink protection",
-    category: "group",
-    react: "🔗",
-    isGroup: true,
-    filename: __filename
-},
-async (conn, mek, m, { reply, text }) => {
-    try {
-        const groupMetadata = await conn.groupMetadata(m.from);
-        const participants = groupMetadata.participants;
-        const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
-
-        if (!botAdmin) {
-            return await reply('❌ Bot admin නෙවෙයි!');
-        }
-
-        if (!userAdmin && !config.isOwner(m.sender)) {
-            return await reply('❌ ඔබ admin නෙවෙයි!');
-        }
-
-        const action = text.toLowerCase();
-
-        if (action === 'on' || action === 'enable') {
-            await updateGroup(m.from, { antilink: true, antilinkAction: 'kick' });
-            await reply('✅ Antilink protection *ENABLED*\n\nLinks යවන කෙනෙක් automatically kick වෙයි!');
-            await m.react('✅');
-        } else if (action === 'off' || action === 'disable') {
-            await updateGroup(m.from, { antilink: false });
-            await reply('❌ Antilink protection *DISABLED*');
-            await m.react('✅');
-        } else {
-            const group = await getGroup(m.from);
-            const status = group?.antilink ? 'ENABLED ✅' : 'DISABLED ❌';
+        pattern: "antilink",
+        desc: "Enable/Disable antilink protection",
+        category: "group",
+        react: "🔗",
+        isGroup: true,
+        filename: __filename
+    },
+    async (conn, mek, m, { reply, text }) => {
+        try {
+            const groupMetadata = await conn.groupMetadata(m.from);
+            const participants = groupMetadata.participants;
+            const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+            const botAdmin = participants.find(p => p.id === botNumber)?.admin;
+            const userAdmin = participants.find(p => p.id === m.sender)?.admin;
             
-            await reply(`
+            if (!botAdmin) {
+                return await reply('❌ Bot admin නෙවෙයි!');
+            }
+            
+            if (!userAdmin && !config.isOwner(m.sender)) {
+                return await reply('❌ ඔබ admin නෙවෙයි!');
+            }
+            
+            const action = text.toLowerCase();
+            
+            if (action === 'on' || action === 'enable') {
+                await updateGroup(m.from, { antilink: true, antilinkAction: 'kick' });
+                await reply('✅ Antilink protection *ENABLED*\n\nLinks යවන කෙනෙක් automatically kick වෙයි!');
+                await m.react('✅');
+            } else if (action === 'off' || action === 'disable') {
+                await updateGroup(m.from, { antilink: false });
+                await reply('❌ Antilink protection *DISABLED*');
+                await m.react('✅');
+            } else {
+                const group = await getGroup(m.from);
+                const status = group?.antilink ? 'ENABLED ✅' : 'DISABLED ❌';
+                
+                await reply(`
 ╔═══════════════════════════╗
 ║   🔗 *ANTILINK SETTINGS*  ║
 ╚═══════════════════════════╝
@@ -55,48 +56,48 @@ async (conn, mek, m, { reply, text }) => {
 • .antilink warn - Set action to warn
 • .antilink delete - Only delete message
             `);
+            }
+            
+        } catch (e) {
+            await m.react('❌');
+            await reply('❌ Error: ' + e.message);
         }
-
-    } catch (e) {
-        await m.react('❌');
-        await reply('❌ Error: ' + e.message);
-    }
-});
+    });
 
 // Antilink action setter
 cmd({
-    pattern: "antilinkaction",
-    desc: "Set antilink action (kick/warn/delete)",
-    category: "group",
-    react: "⚙️",
-    isGroup: true,
-    filename: __filename
-},
-async (conn, mek, m, { reply, text }) => {
-    try {
-        const groupMetadata = await conn.groupMetadata(m.from);
-        const participants = groupMetadata.participants;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
-
-        if (!userAdmin && !config.isOwner(m.sender)) {
-            return await reply('❌ ඔබ admin නෙවෙයි!');
+        pattern: "antilinkaction",
+        desc: "Set antilink action (kick/warn/delete)",
+        category: "group",
+        react: "⚙️",
+        isGroup: true,
+        filename: __filename
+    },
+    async (conn, mek, m, { reply, text }) => {
+        try {
+            const groupMetadata = await conn.groupMetadata(m.from);
+            const participants = groupMetadata.participants;
+            const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+            
+            if (!userAdmin && !config.isOwner(m.sender)) {
+                return await reply('❌ ඔබ admin නෙවෙයි!');
+            }
+            
+            const action = text.toLowerCase();
+            
+            if (['kick', 'warn', 'delete'].includes(action)) {
+                await updateGroup(m.from, { antilinkAction: action });
+                await reply(`✅ Antilink action set to: *${action.toUpperCase()}*`);
+                await m.react('✅');
+            } else {
+                await reply('❌ වලංගු action එකක් නෙවෙයි!\n\nOptions: kick, warn, delete');
+            }
+            
+        } catch (e) {
+            await m.react('❌');
+            await reply('❌ Error: ' + e.message);
         }
-
-        const action = text.toLowerCase();
-
-        if (['kick', 'warn', 'delete'].includes(action)) {
-            await updateGroup(m.from, { antilinkAction: action });
-            await reply(`✅ Antilink action set to: *${action.toUpperCase()}*`);
-            await m.react('✅');
-        } else {
-            await reply('❌ වලංගු action එකක් නෙවෙයි!\n\nOptions: kick, warn, delete');
-        }
-
-    } catch (e) {
-        await m.react('❌');
-        await reply('❌ Error: ' + e.message);
-    }
-});
+    });
 
 // Message handler for antilink (කොල්ල index.js එකට add කරන්න ඕනේ)
 // මේක plugin එකක් නෙවෙයි, මේක message handler එකක්
@@ -114,7 +115,8 @@ if (m.isGroup) {
             const groupMetadata = await conn.groupMetadata(m.from);
             const participants = groupMetadata.participants;
             const userAdmin = participants.find(p => p.id === m.sender)?.admin;
-            const botAdmin = participants.find(p => p.id === conn.user.id)?.admin;
+            const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
             
             // Ignore if user is admin or owner
             if (!userAdmin && !config.isOwner(m.sender) && botAdmin) {
