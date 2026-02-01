@@ -26,6 +26,18 @@ function getBotNumber(conn) {
     }
 }
 
+// Helper function to check if user/bot is admin
+function isAdmin(participants, jid) {
+    // Check both phoneNumber and id fields for compatibility
+    const participant = participants.find(p => p.phoneNumber === jid || p.id === jid);
+    return participant?.admin ? true : false;
+}
+
+// Helper function to get participant
+function getParticipant(participants, jid) {
+    return participants.find(p => p.phoneNumber === jid || p.id === jid);
+}
+
 // Add member
 cmd({
     pattern: "add",
@@ -49,16 +61,9 @@ async (conn, mek, m, { reply, text }) => {
             return await reply('❌ Bot number එක හොයාගන්න බැරි වුනා. Developer කෙනෙක්ට කියන්න.');
         }
         
-        // Find bot and user admin status
-        const botParticipant = participants.find(p => p.id === botNumber);
-        const userParticipant = participants.find(p => p.id === m.sender);
-        
-        const botAdmin = botParticipant?.admin;
-        const userAdmin = userParticipant?.admin;
-        
-        console.log("Bot number:", botNumber);
-        console.log("Bot admin status:", botAdmin);
-        console.log("User admin status:", userAdmin);
+        // Check admin status using helper functions
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි! කරුණාකර bot එක group එකේ admin කරන්න.');
@@ -108,8 +113,8 @@ async (conn, mek, m, { reply }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -126,7 +131,7 @@ async (conn, mek, m, { reply }) => {
         const user = m.quoted ? m.quoted.sender : m.mentionedJid[0];
 
         // Check if target is admin
-        const targetAdmin = participants.find(p => p.id === user)?.admin;
+        const targetAdmin = isAdmin(participants, user);
         if (targetAdmin) {
             return await reply('❌ Admin කෙනෙක් remove කරන්න බැහැ!');
         }
@@ -158,8 +163,8 @@ async (conn, mek, m, { reply }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -202,8 +207,8 @@ async (conn, mek, m, { reply }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -246,7 +251,7 @@ async (conn, mek, m, { reply, text }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!userAdmin && !config.isOwner(m.sender)) {
             return await reply('❌ ඔබ admin නෙවෙයි!');
@@ -258,12 +263,16 @@ async (conn, mek, m, { reply, text }) => {
         let tagMsg = `${message}\n\n`;
 
         for (let participant of participants) {
-            tagMsg += `@${participant.id.split('@')[0]}\n`;
+            const phone = participant.phoneNumber || participant.id;
+            tagMsg += `@${phone.split('@')[0]}\n`;
         }
+
+        // Get all phone numbers for mentions
+        const mentions = participants.map(p => p.phoneNumber || p.id);
 
         await conn.sendMessage(m.from, {
             text: tagMsg,
-            mentions: participants.map(p => p.id)
+            mentions: mentions
         }, { quoted: mek });
 
         await m.react('✅');
@@ -288,7 +297,7 @@ async (conn, mek, m, { reply, text }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!userAdmin && !config.isOwner(m.sender)) {
             return await reply('❌ ඔබ admin නෙවෙයි!');
@@ -298,9 +307,12 @@ async (conn, mek, m, { reply, text }) => {
             return await reply('❌ කරුණාකර message එකක් දෙන්න!');
         }
 
+        // Get all phone numbers for mentions
+        const mentions = participants.map(p => p.phoneNumber || p.id);
+
         await conn.sendMessage(m.from, {
             text: text,
-            mentions: participants.map(p => p.id)
+            mentions: mentions
         }, { quoted: mek });
 
         await m.react('✅');
@@ -325,8 +337,8 @@ async (conn, mek, m, { reply }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -362,8 +374,8 @@ async (conn, mek, m, { reply }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -399,8 +411,8 @@ async (conn, mek, m, { reply, text }) => {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
         const botNumber = getBotNumber(conn);
-        const botAdmin = participants.find(p => p.id === botNumber)?.admin;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const botAdmin = isAdmin(participants, botNumber);
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!botAdmin) {
             return await reply('❌ Bot admin නෙවෙයි!');
@@ -455,7 +467,7 @@ async (conn, mek, m, { reply }) => {
     try {
         const groupMetadata = await conn.groupMetadata(m.from);
         const participants = groupMetadata.participants;
-        const userAdmin = participants.find(p => p.id === m.sender)?.admin;
+        const userAdmin = isAdmin(participants, m.sender);
 
         if (!userAdmin && !config.isOwner(m.sender)) {
             return await reply('❌ ඔබ admin නෙවෙයි!');
